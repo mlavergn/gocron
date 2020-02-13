@@ -11,13 +11,18 @@ import (
 )
 
 // Version export
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // logger stand-in
 var dlog *oslog.Logger
 
 // DEBUG toggle
 var DEBUG = false
+
+var debugTime *time.Time
+
+// -----------------------------------------------------------------------------
+// Job
 
 // Job export
 type Job struct {
@@ -31,19 +36,44 @@ type Job struct {
 	MonthEvery  bool
 	DOW         int // 0-7 - sunday loops
 	DOWEvery    bool
+	Name        string
 	Command     string
+	Args        []string
+	Fn          func()
 }
 
 // NewJob init
 // -1 == *
-func NewJob(min int, hour int, dom int, month int, dow int, command string) *Job {
+func NewJob(min int, hour int, dom int, month int, dow int, name string, command string, args ...string) *Job {
 	id := &Job{
 		Minute:  min,
 		Hour:    hour,
 		DOM:     dom,
 		Month:   month,
 		DOW:     dow,
+		Name:    name,
 		Command: command,
+		Args:    args,
+	}
+
+	if min > 59 || hour > 23 || dom > 31 || month > 12 || dow > 7 {
+		return nil
+	}
+
+	return id
+}
+
+// NewJobFn init
+// -1 == *
+func NewJobFn(min int, hour int, dom int, month int, dow int, name string, fn func()) *Job {
+	id := &Job{
+		Minute: min,
+		Hour:   hour,
+		DOM:    dom,
+		Month:  month,
+		DOW:    dow,
+		Name:   name,
+		Fn:     fn,
 	}
 
 	if min > 59 || hour > 23 || dom > 31 || month > 12 || dow > 7 {
@@ -73,25 +103,26 @@ func (id *Job) String() string {
 	result.WriteString(fmtSegment(id.Month, id.MonthEvery))
 	result.WriteString(fmtSegment(id.DOW, id.DOWEvery))
 
-	return result.String()
+	return strings.TrimSpace(result.String())
 }
 
-// NextTime export
+// Next export
 // Implements the cron time interval logic
-// https://crontab.guru
-func (id *Job) NextTime() time.Time {
-	now := time.Now()
+// BUG: Interval will be incorrect over leap events
+func (id *Job) Next() time.Time {
+	baseTime := time.Now()
+	if debugTime != nil {
+		baseTime = *debugTime
+	}
 
 	// capture the current values
-	year, month, day := now.Date()
-	hour := now.Hour()
-	minute := now.Minute()
+	year, month, day := baseTime.Date()
+	hour := baseTime.Hour()
+	minute := baseTime.Minute()
 
-	// cron does not track seconds or lower
+	// cron does not track anything less than minutes
 	second := 0
 	nanosecond := 0
-
-	// override values
 
 	// minutes
 	if id.Minute != -1 {
@@ -124,6 +155,7 @@ func (id *Job) NextTime() time.Time {
 		}
 	}
 
+	// month
 	if id.Month != -1 {
 		if int(id.Month) < int(month) && !id.MonthEvery {
 			year++
@@ -135,6 +167,7 @@ func (id *Job) NextTime() time.Time {
 		}
 	}
 
+	// day of month
 	if id.DOM != -1 {
 		if id.DOM < day && !id.DOMEvery {
 			month = time.Month(id.Month + 1)
@@ -146,25 +179,33 @@ func (id *Job) NextTime() time.Time {
 		}
 	}
 
-	// calculate the next date
-	next := time.Date(year, month, day,
-		hour, minute, second, nanosecond, now.Location())
+	// calculate the next time
+	nextTime := time.Date(year, month, day,
+		hour, minute, second, nanosecond, baseTime.Location())
 
-	// adjust for DOW
+	// day of week
 	if id.DOW != -1 {
-		if !id.DOMEvery {
-			dow := int(next.Weekday()) - id.DOW
+		if !id.DOWEvery {
+			dow := int(nextTime.Weekday()) - id.DOW
 			if dow < 0 {
 				dow += 7
 			}
-			next.Add(time.Duration(dow) * 24 * time.Hour)
+			nextTime = nextTime.Add(time.Duration(dow) * 24 * time.Hour)
 		} else {
-			next.Add(time.Duration(id.DOW) * 24 * time.Hour)
+			dow := id.DOW - 1
+			// undo any added days
+			if id.Hour > baseTime.Hour() {
+				dow--
+			}
+			nextTime = nextTime.Add((time.Duration(dow) - 1) * 24 * time.Hour)
 		}
 	}
 
-	return next
+	return nextTime
 }
+
+// -----------------------------------------------------------------------------
+// Cron
 
 // Cron export
 type Cron struct {
@@ -181,14 +222,27 @@ func (id *Cron) Add(job *Job) {
 	id.Jobs = append(id.Jobs, *job)
 }
 
+// List export
+func (id *Cron) List() {
+	for _, job := range id.Jobs {
+		log.Println(job.Name, job.String())
+	}
+}
+
 func (id *Cron) schedule(job Job) {
-	duration := time.Until(job.NextTime())
+	duration := time.Until(job.Next())
 	fn := func() {
-		cmd := exec.Command(job.Command)
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-		err := cmd.Run()
-		if err != nil {
-			log.Println(err)
+		if job.Fn != nil {
+			log.Println("Running", job.Name, "as Fn")
+			job.Fn()
+		} else {
+			log.Println("Running", job.Name, "as Command")
+			cmd := exec.Command(job.Command, job.Args...)
+			cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+			err := cmd.Run()
+			if err != nil {
+				log.Println(err)
+			}
 		}
 		// requeue the job for it's next run (soonest 1 min)
 		<-time.After(1 * time.Second)

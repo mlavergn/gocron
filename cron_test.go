@@ -6,33 +6,149 @@ import (
 	"time"
 )
 
+// Can be validated online via
+// https://crontab.guru
 func TestNextTime(t *testing.T) {
-	job := NewJob(5, 4, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	verbose := true
 
-	job = NewJob(1, -1, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	year := 2007
+	month := time.Month(1)
+	day := 9
+	// dow := 2
+	hour := 9
+	min := 41
+	loc := time.Now().Location()
 
-	job = NewJob(15, -1, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	// the expected values need a known baseline to work
+	// consistently, so this may create false negatives,
+	// but now time can be useful for debugging
+	useNow := false
+	if useNow {
+		nowTime := time.Now()
+		year = nowTime.Year()
+		month = nowTime.Month()
+		day = nowTime.Day()
+		hour = nowTime.Hour()
+		min = nowTime.Minute()
+	}
 
-	job = NewJob(55, -1, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	testTime := time.Date(year, month, day, hour, min, 0, 0, loc)
+	debugTime = &testTime
 
-	job = NewJob(-1, 7, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	if verbose {
+		fmt.Println("Base time:", debugTime)
+	}
 
-	job = NewJob(-1, 22, -1, -1, -1, "ls")
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	// 5 4 * * *
+	job := NewJob(5, 4, -1, -1, -1, "test", "ls")
+	actualString := job.String()
+	expectedString := "5 4 * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual := job.Next()
+	expected := time.Date(year, month, day+1, 4, 5, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
 
-	job = NewJob(0, 2, -1, -1, 2, "ls")
+	// 1 * * * *
+	job = NewJob(1, -1, -1, -1, -1, "test", "ls")
+	actualString = job.String()
+	expectedString = "1 * * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day, hour+1, 1, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
+
+	// 15 * * * *
+	job = NewJob(15, -1, -1, -1, -1, "test", "ls")
+	actualString = job.String()
+	expectedString = "15 * * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day, hour+1, 15, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
+
+	// 55 * * * *
+	job = NewJob(55, -1, -1, -1, -1, "test", "ls")
+	actualString = job.String()
+	expectedString = "55 * * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day, hour, 55, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
+
+	// * 7 * * *
+	job = NewJob(-1, 7, -1, -1, -1, "test", "ls")
+	actualString = job.String()
+	expectedString = "* 7 * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day+1, 7, 0, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
+
+	// * 22 * * *
+	job = NewJob(-1, 22, -1, -1, -1, "test", "ls")
+	actualString = job.String()
+	expectedString = "* 22 * * *"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day, 22, 0, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
+
+	// 0 2 * * */3
+	job = NewJob(0, 2, -1, -1, 3, "test", "ls")
 	job.DOWEvery = true
-	println(job.String())
-	fmt.Println(time.Now(), job.NextTime())
+	actualString = job.String()
+	expectedString = "0 2 * * */3"
+	if actualString != expectedString {
+		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
+	}
+	actual = job.Next()
+	expected = time.Date(year, month, day+2, 2, 0, 0, 0, loc)
+	if actual != expected {
+		t.Fatal("TestNextTime unexpected Time result", expectedString, actual, expected)
+	}
+	if verbose {
+		fmt.Println(expectedString, "\t", actual)
+	}
 }

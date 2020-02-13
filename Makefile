@@ -33,6 +33,6 @@ github:
 	open "https://github.com/mlavergn/gocron"
 
 release:
-	zip -r gocron.zip .
+	zip -r gocron.zip LICENSE README.md Makefile cmd *.go go.mod
 	hub release create -m "${VERSION} - Go Cron" -a gocron.zip -t master "v${VERSION}"
 	open "https://github.com/mlavergn/gocron/releases"

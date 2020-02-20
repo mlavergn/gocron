@@ -1,8 +1,10 @@
 package cron
 
 import (
+	"io/ioutil"
 	"log"
 	oslog "log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -11,7 +13,7 @@ import (
 )
 
 // Version export
-const Version = "0.2.0"
+const Version = "0.2.1"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -20,6 +22,14 @@ var dlog *oslog.Logger
 var DEBUG = false
 
 var debugTime *time.Time
+
+func init() {
+	if DEBUG {
+		dlog = oslog.New(os.Stderr, "", 0)
+	} else {
+		dlog = oslog.New(ioutil.Discard, "", 0)
+	}
+}
 
 // -----------------------------------------------------------------------------
 // Job
@@ -209,27 +219,31 @@ func (id *Job) Next() time.Time {
 
 // Cron export
 type Cron struct {
-	Jobs []Job
+	jobs []*Job
 }
 
 // NewCron init
 func NewCron() *Cron {
-	return &Cron{}
+	return &Cron{
+		jobs: []*Job{},
+	}
 }
 
 // Add export
 func (id *Cron) Add(job *Job) {
-	id.Jobs = append(id.Jobs, *job)
+	dlog.Println("Cron.Add")
+	id.jobs = append(id.jobs, job)
 }
 
 // List export
 func (id *Cron) List() {
-	for _, job := range id.Jobs {
+	for _, job := range id.jobs {
 		log.Println(job.Name, job.String())
 	}
 }
 
-func (id *Cron) schedule(job Job) {
+func (id *Cron) schedule(job *Job) {
+	dlog.Println("Cron.schedule")
 	duration := time.Until(job.Next())
 	fn := func() {
 		if job.Fn != nil {
@@ -253,7 +267,8 @@ func (id *Cron) schedule(job Job) {
 
 // Start export
 func (id *Cron) Start() {
-	for _, job := range id.Jobs {
+	dlog.Println("Cron.Start")
+	for _, job := range id.jobs {
 		id.schedule(job)
 	}
 }

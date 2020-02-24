@@ -14,7 +14,7 @@ import (
 )
 
 // Version export
-const Version = "0.3.1"
+const Version = "0.3.2"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -131,15 +131,15 @@ func (id *Job) String() string {
 	}
 	result.WriteString(username)
 
-	if id.Fn == nil {
+	if id.Fn != nil {
+		result.WriteString(" ")
+		result.WriteString("closureFn")
+	} else {
 		result.WriteString(" ")
 		result.WriteString(id.Command)
 
 		result.WriteString(" ")
 		result.WriteString(strings.Join(id.Args, " "))
-	} else {
-		result.WriteString(" ")
-		result.WriteString("<fn closure>")
 	}
 
 	return result.String()

@@ -14,7 +14,7 @@ import (
 )
 
 // Version export
-const Version = "0.3.0"
+const Version = "0.3.1"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -51,6 +51,7 @@ type Job struct {
 	Command     string
 	Args        []string
 	Fn          func()
+	Scheduled   time.Duration
 }
 
 // NewJob init
@@ -130,11 +131,16 @@ func (id *Job) String() string {
 	}
 	result.WriteString(username)
 
-	result.WriteString(" ")
-	result.WriteString(id.Command)
+	if id.Fn == nil {
+		result.WriteString(" ")
+		result.WriteString(id.Command)
 
-	result.WriteString(" ")
-	result.WriteString(strings.Join(id.Args, " "))
+		result.WriteString(" ")
+		result.WriteString(strings.Join(id.Args, " "))
+	} else {
+		result.WriteString(" ")
+		result.WriteString("<fn closure>")
+	}
 
 	return result.String()
 }
@@ -264,7 +270,7 @@ func (id *Cron) Tab() map[string]map[string]string {
 	for _, job := range id.jobs {
 		result[job.Name] = map[string]string{
 			"job":  job.String(),
-			"next": job.Next().String(),
+			"next": job.Scheduled.String(),
 		}
 	}
 	return result
@@ -273,13 +279,14 @@ func (id *Cron) Tab() map[string]map[string]string {
 // List export
 func (id *Cron) List() {
 	for _, job := range id.jobs {
-		log.Println(job.Name, job.String(), job.Next())
+		log.Println(job.Name, job.String(), job.Scheduled.String())
 	}
 }
 
 func (id *Cron) schedule(job *Job) {
 	dlog.Println("Cron.schedule")
 	duration := time.Until(job.Next())
+	job.Scheduled = duration
 	fn := func() {
 		if job.Fn != nil {
 			log.Println("Running", job.Name, "as Fn")

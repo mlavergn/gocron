@@ -13,7 +13,7 @@ import (
 )
 
 // Version export
-const Version = "0.2.2"
+const Version = "0.2.3"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -233,6 +233,18 @@ func NewCron() *Cron {
 func (id *Cron) Add(job *Job) {
 	dlog.Println("Cron.Add")
 	id.jobs = append(id.jobs, job)
+}
+
+// Tab export
+func (id *Cron) Tab() map[string]map[string]string {
+	result := map[string]map[string]string{}
+	for _, job := range id.jobs {
+		result[job.Name] = map[string]string{
+			"job":  job.String(),
+			"next": job.Next().String(),
+		}
+	}
+	return result
 }
 
 // List export

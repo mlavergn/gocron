@@ -8,7 +8,7 @@
 
 .PHONY: test
 
-VERSION := 0.2.2
+VERSION := 0.2.3
 
 ver:
 	@sed -i '' 's/^const Version = "[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}"/const Version = "${VERSION}"/' cron.go

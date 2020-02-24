@@ -13,7 +13,7 @@ import (
 )
 
 // Version export
-const Version = "0.2.1"
+const Version = "0.2.2"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -238,7 +238,7 @@ func (id *Cron) Add(job *Job) {
 // List export
 func (id *Cron) List() {
 	for _, job := range id.jobs {
-		log.Println(job.Name, job.String())
+		log.Println(job.Name, job.String(), job.Next())
 	}
 }
 

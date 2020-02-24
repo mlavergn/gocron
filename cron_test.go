@@ -41,7 +41,7 @@ func TestNextTime(t *testing.T) {
 
 	// 5 4 * * *
 	job := NewJob(5, 4, -1, -1, -1, "test", "ls")
-	actualString := job.String()
+	actualString := job.TimeString()
 	expectedString := "5 4 * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -57,7 +57,7 @@ func TestNextTime(t *testing.T) {
 
 	// 1 * * * *
 	job = NewJob(1, -1, -1, -1, -1, "test", "ls")
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "1 * * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -73,7 +73,7 @@ func TestNextTime(t *testing.T) {
 
 	// 15 * * * *
 	job = NewJob(15, -1, -1, -1, -1, "test", "ls")
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "15 * * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -89,7 +89,7 @@ func TestNextTime(t *testing.T) {
 
 	// 55 * * * *
 	job = NewJob(55, -1, -1, -1, -1, "test", "ls")
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "55 * * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -105,7 +105,7 @@ func TestNextTime(t *testing.T) {
 
 	// * 7 * * *
 	job = NewJob(-1, 7, -1, -1, -1, "test", "ls")
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "* 7 * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -121,7 +121,7 @@ func TestNextTime(t *testing.T) {
 
 	// * 22 * * *
 	job = NewJob(-1, 22, -1, -1, -1, "test", "ls")
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "* 22 * * *"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)
@@ -138,7 +138,7 @@ func TestNextTime(t *testing.T) {
 	// 0 2 * * */3
 	job = NewJob(0, 2, -1, -1, 3, "test", "ls")
 	job.DOWEvery = true
-	actualString = job.String()
+	actualString = job.TimeString()
 	expectedString = "0 2 * * */3"
 	if actualString != expectedString {
 		t.Fatal("TestNextTime unexpected String result", actualString, expectedString)

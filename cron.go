@@ -6,6 +6,7 @@ import (
 	oslog "log"
 	"os"
 	"os/exec"
+	"os/user"
 	"strconv"
 	"strings"
 	"syscall"
@@ -13,7 +14,7 @@ import (
 )
 
 // Version export
-const Version = "0.2.3"
+const Version = "0.3.0"
 
 // logger stand-in
 var dlog *oslog.Logger
@@ -93,8 +94,8 @@ func NewJobFn(min int, hour int, dom int, month int, dow int, name string, fn fu
 	return id
 }
 
-// String export
-func (id *Job) String() string {
+// TimeString export
+func (id *Job) TimeString() string {
 	fmtSegment := func(value int, every bool) string {
 		prefix := ""
 		if every {
@@ -114,6 +115,28 @@ func (id *Job) String() string {
 	result.WriteString(fmtSegment(id.DOW, id.DOWEvery))
 
 	return strings.TrimSpace(result.String())
+}
+
+// String export
+func (id *Job) String() string {
+	var result strings.Builder
+	result.WriteString(id.TimeString())
+
+	result.WriteString(" ")
+	user, uerr := user.Current()
+	username := "unknown"
+	if uerr == nil {
+		username = user.Username
+	}
+	result.WriteString(username)
+
+	result.WriteString(" ")
+	result.WriteString(id.Command)
+
+	result.WriteString(" ")
+	result.WriteString(strings.Join(id.Args, " "))
+
+	return result.String()
 }
 
 // Next export
